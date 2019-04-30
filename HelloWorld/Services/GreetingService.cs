@@ -11,8 +11,8 @@ namespace HelloWorld.Services
             return new Greeting()
             {
                 Salutation = "Hello",
-                Audience = "World",
-                Description = "Welcome to your new app"
+                Audience = "Build",
+                Description = "Welcome to Microsoft Build 2019"
             };
         }
 
