@@ -12,7 +12,7 @@ namespace HelloWorld.Services
             {
                 Salutation = "Hello",
                 Audience = "Microsoft Build",
-                Description = "Welcome to the Azure DevOps booth!"
+                Description = "Welcome to the Azure DevOps booth! Release linking!"
             };
         }
 
