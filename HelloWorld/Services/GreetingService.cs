@@ -11,8 +11,8 @@ namespace HelloWorld.Services
             return new Greeting()
             {
                 Salutation = "Hello",
-                Audience = "Microsoft Build",
-                Description = "Welcome to the Azure DevOps booth! Release linking!"
+                Audience = "GitHub Satellite",
+                Description = "Welcome to the Azure Pipelines booth!"
             };
         }
 
