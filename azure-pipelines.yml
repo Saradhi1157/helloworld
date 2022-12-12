@@ -46,21 +46,6 @@ stages:
                     echo '-- Version 2.0 --'
                     echo 'stage deploy completed !'
           on:
-            success:
-              steps:
-              - task: PowerShell@2
-                inputs:
-                  failOnStderr: true
-                  targetType: 'inline'
-                  script: |
-                    $contentType = "application/json";
-                    $headers = @{ Authorization = 'Bearer $(System.AccessToken)' };
-                    $rawRequest = @{ daysValid = 365 * 2; definitionId = $(System.DefinitionId); ownerId = 'User:$(Build.RequestedForId)'; protectPipeline = $false; runId = $(Build.BuildId) };
-                    $request = ConvertTo-Json @($rawRequest);
-                    echo  '---------------Start  of Scrypt ---------------'
-                    $uri = "https://dev.azure.com/perficientdevops/DevOps%20Practice/_apis/build/retention/leases?api-version=7.0";
-                    Invoke-RestMethod -uri $uri -method POST -Headers $headers -ContentType $contentType -Body $request
-                    Write-Output '---------------End  of Scrypt ---------------';
             failure:
               steps:        
               - task: PowerShell@2
@@ -68,67 +53,4 @@ stages:
                   failOnStderr: true
                   targetType: 'inline'
                   script: |
-                    $contentType = "application/json";
-                    $header = @{ Authorization = 'Bearer $(System.AccessToken)' };
-                    $organization = "https://dev.azure.com/perficientdevops"
-                    $project = "DevOps%20Practice"
-                    $runsTemplate ="$organization/$project/_apis/pipelines/{PIPELINE_ID}/runs?api-version=7.0"
-                    $retentionsTemplate = "$organization/$project/_apis/build/builds/{BUILD_DEF_ID}/leases?api-version=7.0"
-
-                    function InvokeGetRequest ($GetUrl)
-                    {    
-                        Write-Host '$GetUrl' $GetUrl
-                        return Invoke-RestMethod -Uri $GetUrl -Method Get -ContentType "application/json" -Headers $header     
-                    }
-                    $LeaseObj = New-Object –TypeName PSObject –Property $LeaseDetailObj
-                    $runsTemplateUrl = $runsTemplate -replace "{PIPELINE_ID}", $(System.DefinitionId)
-                    Write-Host $runsTemplateUrl
-                    $runList =  InvokeGetRequest $runsTemplateUrl
-                    Write-Host 'runList' $runList
-                    if ($runList.count -gt 0)
-                    {
-                        $runList.value | Where-Object {$_.result -eq "succeeded"} | ForEach-Object {
-                            Write-Host 'BUILD ID :'  "|" $_.id
-                            $urlPipeline = $_.url
-                            $retentionsTemplateList= $retentionsTemplate -replace "{BUILD_DEF_ID}", $_.id
-                            Write-Host 'retentionsTemplateList URL:' $retentionsTemplateList
-                            $retentionsList =  Invoke-RestMethod -Uri $retentionsTemplateList  -Method Get -ContentType "application/json"  -Headers $header  
-                            Write-Host 'This is exec:' 
-                            $retentionsList  | Format-Table -AutoSize 
-                            $retentionsList.value | Where-Object {$_.count -ge 0} | ForEach-Object {
-                                Write-Host 'actual Lease value :' $_
-                                if($_.ownerId.StartsWith('User'))
-                                {
-                                $_  | Format-Table -AutoSize
-                                Write-Host 'URL Pipeline:' $urlPipeline
-                                $tempUrl = $ArrObj[0].url + '?api-version=7.0'
-                                $pipelineDetails  = Invoke-RestMethod -Uri $tempUrl  -Method Get -ContentType "application/json"  -Headers $header  
-                                $bodyContent= $pipelineDetails.resources | ConvertTo-Json -Depth 10
-                                $onjJson= @{}
-                                $onjJson['resources'] = $bodyContent
-                                $version =(ConvertFrom-Json $bodyContent).repositories.self.version
-                                $refName =(ConvertFrom-Json $bodyContent).repositories.self.refName
-                                $rep_self_id =(ConvertFrom-Json $bodyContent).repositories.self.repository.id
-                                $rep_self_type =(ConvertFrom-Json $bodyContent).repositories.self.repository.type
-                                $request =  @{ resources = @{repositories= @{ self= @{repository= @{
-                                                      id="$rep_self_id" 
-                                                      type="$rep_self_type" 
-                                                      } 
-                                                      refName ="$refName"
-                                                        version="$version" }  } }} | ConvertTo-Json -Depth 10;
-
-                                Write-Output 'requestBody:'  $request -ForegroundColor Green
-                                $requestJ= Convertto-Json  $onjJson;
-                                $uri = "organization}/${project}/apis/pipelines/${$.definitionId}/runs?pipelineVersion=$version&api-version=7.0";
-                                Write-Output  'Json uri' $uri -ForegroundColor Green
-                                $pipelineInvoked  =Invoke-RestMethod -uri $uri -method POST -Headers $header -ContentType $contentType -Body $request
-                                Write-Output  'pipelineInvoked' $pipelineInvoked
-                                Write-Output  ' --- Completed successfully rollback ----'
-                                Break   
-                                }
-                            }     
-                        }
-                    }
-                    else {
-                        Write-Host 'No Previous builds found!!!'
-                    }
+                    New-AzResourceGroupDeployment -Name ExampleDeployment02 `-ResourceGroupName $resourceGroupName `-TemplateFile c:\MyTemplates\azuredeploy.json `-RollbackToLastDeployment
