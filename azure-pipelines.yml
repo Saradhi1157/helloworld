@@ -2,8 +2,12 @@ trigger:
 - none
 
 parameters:
-  - name: temp_deploy
-    default:
+- name: lastsuccessful
+  displayName: Use last known stable configuration (if false the most recent commit will be used)?
+  type: boolean
+  default: true
+- name: temp_deploy
+  default:
 pool:
   vmImage: windows-latest
 
@@ -36,7 +40,7 @@ stages:
                 inputs:
                   scriptType: inlineScript
                   inlineScript: > 
-                    ech 'stage deploy started !'
+                    echo 'stage deploy started !'
                     echo "Build.ArtifactStagingDirectory: $(Build.ArtifactStagingDirectory)"
                     echo "Build.BuildId: $(Build.BuildId)"
                     echo "Build.BuildNumber: $(Build.BuildNumber)"
@@ -45,6 +49,13 @@ stages:
                     echo "System.DefinitionId: $(System.DefinitionId)"
                     echo '-- Version 2.0 --'
                     echo 'stage deploy completed !'
+              - task: PowerShell@2
+                displayName: Switch to last known good configuration
+                inputs:
+                  targetType: 'inline'
+                  script: |
+                    git reset --hard $(lastsuccessful)
+                condition: ${{ parameters.lastsuccessful }}
           on:
             failure:
               steps:        
@@ -53,4 +64,9 @@ stages:
                   failOnStderr: true
                   targetType: 'inline'
                   script: |
-                    New-AzResourceGroupDeployment -Name ExampleDeployment02 `-ResourceGroupName $resourceGroupName `-TemplateFile c:\MyTemplates\azuredeploy.json `-RollbackToLastDeployment
+                      git reset --hard $(lastsuccessful)
+                condition: ${{ parameters.lastsuccessful }}
+            success:
+              steps:
+              - script: |
+                  echo " build is passed"
