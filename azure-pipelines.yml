@@ -6,8 +6,7 @@ parameters:
   displayName: Use last known stable configuration (if false the most recent commit will be used)?
   type: boolean
   default: true
-- name: temp_deploy
-  default:
+  
 pool:
   vmImage: windows-latest
 
